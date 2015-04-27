@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>SyncTube</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css" />
+		<script src="//cdn.socket.io/socket.io-1.3.5.js"></script>
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="page-header">
+					<h1>SyncTube <small>By Zane Helton</small></h1>
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-lg-12">
+					<div class="input-group">
+						<input id="newRL" type="text" class="form-control" placeholder="Video URL...">
+						<span class="input-group-btn">
+							<button class="btn btn-primary" type="button" onclick="setVideo();">Set Video</button>
+						</span>
+					</div>
+				</div>
+			</div>
+
+			<br />
+
+			<div class="row">
+				<div class="embed-responsive embed-responsive-16by9">
+					<div id="player"></div>
+					<script type="text/javascript">
+						var tag = document.createElement('script');
+						tag.src = "https://www.youtube.com/iframe_api";
+						var firstScriptTag = document.getElementsByTagName('script')[0];
+						firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+						var player;
+
+						function onYouTubeIframeAPIReady() {
+							player = new YT.Player('player', {
+								height: '390',
+								width: '640',
+								videoId: 'MwUqjJHcAn8',
+								events: {
+									'onReady': onPlayerReady,
+								}
+							});
+						}
+
+						var socket = io();
+
+						function onPlayerReady() {
+							player.playVideo();
+						}
+
+						// syncs everything
+						function emitToggle() {
+							if (player.getPlayerState() == 1) {
+								socket.emit("state", "pause");
+								socket.emit("time", player.getCurrentTime());
+								player.pauseVideo();
+							} else if (player.getPlayerState() == 2) {
+								socket.emit("state", "play");
+								socket.emit("time", player.getCurrentTime());
+								player.playVideo();
+							}
+						}
+
+						// syncs the player's state
+						socket.on('state', function(state) {
+							if (state == "pause") {
+								player.pauseVideo();
+							} else if (state == "play") {
+								player.playVideo();
+							}
+						});
+
+						// syncs the videos with time
+						socket.on('time', function(time) {
+							player.seekTo(time);
+						});
+
+						// sets the youtube url in the text field
+						socket.on('videoIdentifier', function(videoIdentifier) {
+							player.loadVideoById({
+								videoId: videoIdentifier
+							});
+
+							document.getElementById("newRL").value = "https://www.youtube.com/watch?v=" + videoIdentifier;
+						});
+
+						function setVideo() {
+							socket.emit("videoIdentifier", document.getElementById("newRL").value);
+						}
+					</script>
+				</div>
+				<center><button style="margin-top: 35px;" type="button" class="btn btn-primary" onclick="emitToggle();">Toggle Play</button></center>
+			</div>
+		</div>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+		<script src="//maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+	</body>
+</html>
