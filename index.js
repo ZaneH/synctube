@@ -9,15 +9,18 @@ app.get('/', function(req, res) {
 io.on('connection', function(socket) {
     socket.on('state', function(state) {
         io.emit('state', state);
+        console.log("State: " + state);
     });
 
     socket.on('videoIdentifier', function(vid) {
-        var newRL = vid.split("=")[1];
+        var newRL = vid.split("=")[vid.split("=").length - 1];
         io.emit('videoIdentifier', newRL);
+        console.log("URL: " + newRL);
     });
 
     socket.on("time", function(time) {
         io.emit("time", time);
+        console.log("Time: " + time);
     });
 });
 

@@ -9,7 +9,7 @@
 		<div class="container">
 			<div class="row">
 				<div class="page-header">
-					<h1>SyncTube <small>By Zane Helton</small></h1>
+					<h1>SyncTube <small id="viewer-counter">By Zane Helton</small></h1>
 				</div>
 			</div>
 
@@ -53,20 +53,25 @@
 							player.playVideo();
 						}
 
-						// syncs everything
 						function emitToggle() {
 							if (player.getPlayerState() == 1) {
 								socket.emit("state", "pause");
 								socket.emit("time", player.getCurrentTime());
+								socket.emit("videoIdentifier", player.getVideoUrl());
 								player.pauseVideo();
 							} else if (player.getPlayerState() == 2) {
 								socket.emit("state", "play");
 								socket.emit("time", player.getCurrentTime());
+								socket.emit("videoIdentifier", player.getVideoUrl());
 								player.playVideo();
 							}
 						}
 
-						// syncs the player's state
+						function syncVideo() {
+							socket.emit("time", player.getCurrentTime());
+							socket.emit("videoIdentifier", player.getVideoUrl());
+						}
+
 						socket.on('state', function(state) {
 							if (state == "pause") {
 								player.pauseVideo();
@@ -75,26 +80,29 @@
 							}
 						});
 
-						// syncs the videos with time
 						socket.on('time', function(time) {
 							player.seekTo(time);
 						});
 
-						// sets the youtube url in the text field
 						socket.on('videoIdentifier', function(videoIdentifier) {
-							player.loadVideoById({
-								videoId: videoIdentifier
-							});
+							if (videoIdentifier != player.getVideoUrl().split("=")[player.getVideoUrl().split("=").length - 1]) {
+								player.loadVideoById({
+									videoId: videoIdentifier
+								});
 
-							document.getElementById("newRL").value = "https://www.youtube.com/watch?v=" + videoIdentifier;
+								document.getElementById("newRL").value = "https://www.youtube.com/watch?v=" + videoIdentifier;
+							}
 						});
 
 						function setVideo() {
-							socket.emit("videoIdentifier", document.getElementById("newRL").value);
+							if (document.getElementById("newRL") != null) {socket.emit("videoIdentifier", document.getElementById("newRL").value);}
 						}
 					</script>
 				</div>
-				<center><button style="margin-top: 35px;" type="button" class="btn btn-primary" onclick="emitToggle();">Toggle Play</button></center>
+			</div>
+			<div class="row">
+				<button style="margin-top: 35px;" type="button" class="btn btn-primary col-lg-5" onclick="emitToggle();">Toggle Play</button>
+				<button style="margin-top: 35px; display: inline;" type="button" class="btn btn-primary col-lg-offset-2 col-lg-5" onclick="syncVideo();">Sync Videos</button>
 			</div>
 		</div>
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
